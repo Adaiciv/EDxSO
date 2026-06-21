@@ -1,0 +1,1 @@
+//Criem um programa em C que apenas consiga abrir um arquivo de texto, ler os pedaços (blocos) dele, e copiar para outro arquivo.
