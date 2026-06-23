@@ -1,6 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct No{
+    unsigned char byte;
+    unsigned long freq;
+    struct No *esq;
+    struct No *dir;
+}No;
+
+typedef struct{
+    No **v;
+    int tam;
+    int capacidade;
+}heap;
+
+void contarFreq(FILE *arq, unsigned long freq[]){
+    unsigned char c;
+
+    while(fread(&c, 1, 1, arq) == 1){
+        freq[c]++;
+    }
+}
+
+No *criarNo(unsigned char byte, unsigned char freq){
+    No *novo = (No *)malloc(sizeof(No));
+
+    novo->byte = byte;
+    novo->freq = freq;
+    novo->esq = NULL;
+    novo->dir = NULL;
+
+    return novo;
+}
+
+heap *criarHeap(int capacidade){
+    heap *h = malloc(sizeof(heap));
+
+    h->v = malloc(sizeof(No) * capacidade);
+
+    h->tam = 0;
+
+    h->capacidade = capacidade;
+
+    return h;
+}
+
+//heap *h = criarHeap(256)
+
 int main() {
     FILE *origem = fopen("entrada.txt", "rb");
     FILE *destino = fopen("saida.txt", "wb");
