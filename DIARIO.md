@@ -9,4 +9,3 @@
 * **Bugs e Desafios:** A escrita extremamente técnica e extensa do PDF do trabalho revelou-se como o primeiro grande desafio, optamos por utilizar ferramentas de IA para agilizar a parte de leitura e compreensão, mas ainda nos fundamentando nas orientações do professor. A falta de familiaridade com o Github exigiu uma busca por tutoriais que nos auxiliasse na criação e movimentação pelo projeto.
 Makefile link
 https://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
->>>>>>> f767d70298331eddc7801b29f801405caee3ca94
