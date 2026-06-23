@@ -73,3 +73,30 @@ Ferramenta utilizada: ChatGPT
 ## Conclusão
 
 A etapa permitiu compreender os mecanismos básicos de manipulação de arquivos em C e estabeleceu a fundação necessária para a implementação futura do compressor baseado em Árvore de Huffman.
+
+
+
+
+
+
+
+
+
+
+## Data
+
+23/06
+
+## Alterações
+
+- Inseridas as estruturas -No e -heap
+
+- Inseridas as funções de CriarNo(), contarFreq() e criarHeap().
+
+## Justificativa
+
+Agora estamos começando a colocar a arvore de Huffman. A árvore necessariamente precisa da frequência de bytes em um arquivo para fazer a compactação no futuro, e também precisa do heap. O heap ordena a árvore para que os bytes que menos aparece sejam a raiz, o que facilita achar os 2 menores valores para fazer o método de Huffman
+
+## Prompt 1
+
+"Me diga qual o próximo passo e me explique detalhadamente como funciona e como devo fazer."
