@@ -100,3 +100,38 @@ Agora estamos começando a colocar a arvore de Huffman. A árvore necessariament
 ## Prompt 1
 
 "Me diga qual o próximo passo e me explique detalhadamente como funciona e como devo fazer."
+
+
+
+
+
+
+
+
+
+
+## Data
+
+26/06
+
+## Alterações
+
+- Inseridas as funções de inserirHeap(), removerMin() e construirHuffman
+
+- Inserido o uso de argumentos na função main() para utilizar outros tipos de arquivos.
+
+- Corrigido erro de escrita na função criarNo(), onde usava unsigned char freq ao invés de unsigned long freq 
+
+## Justificativa
+
+A função de criar o heap foi implementada anteriormente, agora, foi implementada a função de inseriri no Heap, que irá receber as frequências dos nós e irá ordená-los de forma que a raiz seja sempre o valor de menor frequencia.
+
+A função de remover mínimo irá remover o menor valor da árvore, e quando um nó é removido, o valor que está em ultimo no vetor irá para a raiz, e, se o valor que foi para a raiz não estiver de acordo com o heap (o menor da árvore), irá procurar nas sub-arvores da esquerda e da direita o menor valor para realizar troca até estar correto. O valor removido é retornado para ser usado depois pela função de construit a árvore de Huffman
+
+A função de construirHuffman irá usar da função de remover mínimo para pegar o menor e o segundo menor que estão no heap, irá criar um nó pai, que será a soma das duas frequências dos nós, e irá inserir o valor da frequencia no heap, enquanto o tamanho ser maior que 1. No final, retorna o ultimo elemento do heap, que é a raiz.
+
+Implementada também a função de escolher o nome e extensão do arquivo a ser compactado e do arquivo resultante.
+
+## Prompt 1
+
+"Me explique como funciona o heap e a arvore de huffman em código, qual é a lógica por traz deles?"
