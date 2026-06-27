@@ -135,3 +135,55 @@ Implementada também a função de escolher o nome e extensão do arquivo a ser 
 ## Prompt 1
 
 "Me explique como funciona o heap e a arvore de huffman em código, qual é a lógica por traz deles?"
+
+
+
+
+
+
+
+
+
+## Data
+
+27/06
+
+## Alterações
+
+- Inserida a estrutura do cabeçalho.
+
+- Alteradas a função de contarFreq().
+
+- inseridas as funções de gerarCódigos(), escreverCabecalho(), escreverBit(), compactarArquivo(), lerCabecalho(), imprimirCodigos e funções de liberação de memória.
+
+- Inseridas alterações no main
+
+## Justificativa
+
+Após a construção da árvore de Huffman, tornou-se necessário armazenar informações que permitam identificar o arquivo compactado e reconstruir a árvore durante a descompactação. Para isso, foi criada uma estrutura de cabeçalho contendo uma assinatura para identificar o formato do arquivo, o tamanho original do arquivo e o vetor de frequências utilizado para gerar a árvore.
+
+A função contarFreq() passou a retornar também o tamanho original do arquivo, além de preencher o vetor de frequências. Essa informação será gravada no cabeçalho e permitirá que a descompactação saiba exatamente quantos bytes devem ser reconstruídos, evitando interpretar bits de preenchimento presentes no último byte compactado.
+
+Inserida a função gerarCodigos() pois, após a construção da árvore de Huffman, foi necessário percorrê-la para gerar os códigos binários de cada byte. A função realiza um percurso recursivo na árvore, registrando '0' ao seguir para a esquerda e '1' ao seguir para a direita, armazenando o código correspondente de cada símbolo em uma tabela para ser utilizada na compactação.
+
+A função escreverCabecalho() foi criada para gravar, no início do arquivo compactado, todas as informações necessárias para sua futura descompactação. Dessa forma, o arquivo passa a ser autocontido, contendo os dados necessários para reconstruir a árvore de Huffman sem depender do arquivo original.
+
+A função escreverBit() é necessária pois, como os códigos de Huffman possuem tamanho variável e são formados por bits, tornou-se necessário criar uma função responsável por agrupar esses bits em um buffer de 8 bits (1 byte). Quando o buffer é preenchido, seu conteúdo é gravado no arquivo compactado, permitindo o armazenamento eficiente dos códigos.
+
+A função compactarArquivo() é responsável por realizar a compactação propriamente dita. A função percorre novamente o arquivo original, consulta o código de Huffman correspondente a cada byte na tabela gerada anteriormente e utiliza escreverBit() para gravar esses códigos em formato binário no arquivo de saída
+
+A função lerCabecalho() Foi adicionada para preparar a etapa de descompactação. Sua função é ler as informações presentes no cabeçalho do arquivo compactado, permitindo recuperar os dados necessários para reconstruir a árvore de Huffman e restaurar o conteúdo original.
+
+A função imprimirCodigos() foi criada para auxiliar na validação do algoritmo durante os testes. A função imprime os códigos de Huffman gerados para cada byte presente no arquivo, permitindo verificar se a árvore foi construída corretamente e se os códigos atribuídos estão consistentes.
+
+Foram implementadas funções responsáveis por liberar a memória alocada dinamicamente para a árvore de Huffman, para a tabela de códigos e para o heap. Essa etapa evita vazamentos de memória e garante que todos os recursos utilizados pelo programa sejam corretamente liberados ao final da execução.
+
+## Prompt 1
+
+"Agora quais seriam os próximos passos? me explique."
+
+## Prompt 2
+"Como faço para que o código exiba as especificações do arquivo compactado, como tamanho?"
+
+## Prompt 3
+"Como eu deveria fazer a função main?"
