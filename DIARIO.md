@@ -178,6 +178,16 @@ A função imprimirCodigos() foi criada para auxiliar na validação do algoritm
 
 Foram implementadas funções responsáveis por liberar a memória alocada dinamicamente para a árvore de Huffman, para a tabela de códigos e para o heap. Essa etapa evita vazamentos de memória e garante que todos os recursos utilizados pelo programa sejam corretamente liberados ao final da execução.
 
+A função main() foi reorganizada para representar todas as etapas do processo de compactação utilizando o algoritmo de Huffman. Inicialmente, passou a receber os nomes dos arquivos de origem e destino por meio dos argumentos da linha de comando (argc e argv), tornando o programa mais flexível e permitindo sua utilização com qualquer arquivo, sem a necessidade de alterar o código-fonte.
+
+Também foi adicionada a verificação da quantidade de argumentos informados e da abertura dos arquivos, garantindo que o programa seja encerrado de forma segura caso ocorra algum erro durante a execução.
+
+Após a abertura dos arquivos, a função passou a executar a sequência completa do algoritmo: contagem das frequências dos bytes, criação do heap mínimo, construção da árvore de Huffman, geração dos códigos binários e escrita do cabeçalho do arquivo compactado.
+
+Foi inserida a chamada da função rewind() antes da compactação para reposicionar o ponteiro do arquivo de origem no início. Isso é necessário porque a função de contagem de frequências percorre todo o arquivo, deixando o ponteiro no final. Sem esse reposicionamento, a etapa de compactação não conseguiria realizar uma nova leitura dos dados.
+
+Ao final da execução, foram adicionadas chamadas para liberar toda a memória alocada dinamicamente (heap, árvore de Huffman e tabela de códigos) e fechar corretamente os arquivos utilizados, evitando vazamentos de memória e garantindo o encerramento adequado do programa.
+
 ## Prompt 1
 
 "Agora quais seriam os próximos passos? me explique."
