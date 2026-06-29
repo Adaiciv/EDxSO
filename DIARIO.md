@@ -273,3 +273,43 @@ O código foi dividido em módulos independentes para separar as responsabilidad
 - "Como faço para modularizar meu código para ser mais otimizado?"
 
 - "Quais testes posso fazer para ver se o código está funcionando bem?"
+
+
+
+
+
+
+
+## Data
+
+29/06
+
+## Alterações
+ - Processamento por blocos.
+ - Alterações em funções para suportar processamento bloco por bloco.
+ - Correção de erro causado pela exclusão da função main.
+ - Remoção da versão não modularizada do código (codigo.c), mantendo apenas a estrutura modular.
+
+## Justificativa
+
+ - ## Processamento por blocos
+
+A leitura e a compactação do arquivo foram adaptadas para processar conjuntos de bytes (blocos) em vez de um byte por vez. Essa alteração reduz a quantidade de operações de leitura realizadas durante a execução e prepara a estrutura do projeto para futuras implementações de paralelismo, conforme os requisitos do trabalho.
+
+ - ## Alterações em funções para suportar processamento bloco por bloco
+
+Funções responsáveis pela leitura e compactação foram modificadas para trabalhar com buffers de memória em vez de processar apenas um caractere por chamada. Essa reorganização tornou o código mais modular, facilitando a reutilização das funções e permitindo sua adaptação para um pipeline de processamento no futuro.
+
+ - ## Correção de erro causado pela exclusão da função main
+
+Durante a reorganização dos arquivos ocorreu a exclusão acidental do arquivo que continha a função main, impedindo a geração do executável. O arquivo foi recriado, restabelecendo o ponto de entrada do programa e permitindo a compilação e execução normalmente.
+
+ - ## Remoção da versão não modularizada do código (codigo.c)
+
+Após concluir a modularização do projeto, o arquivo que concentrava toda a implementação em um único código tornou-se desnecessário. Sua remoção evita duplicação de funções, reduz a possibilidade de conflitos durante a compilação e mantém apenas a organização modular adotada pelo projeto, facilitando a manutenção e a evolução do sistema.
+
+## Prompts
+
+- "Como faço para o codigo processar bloco por bloco ao invés de byte por byte?"
+
+- "Como o código seria adequado para pipeline?"
