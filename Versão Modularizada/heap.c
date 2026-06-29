@@ -35,9 +35,7 @@ void inserirHeap(heap *h, No *novo){
 
         h->capacidade *= 2;
 
-        No **novoVetor =
-            realloc(h->v,
-                    sizeof(No *) * h->capacidade);
+        No **novoVetor = realloc(h->v, sizeof(No *) * h->capacidade);
 
         if(!novoVetor)
             return;

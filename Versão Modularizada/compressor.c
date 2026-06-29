@@ -10,8 +10,7 @@
 
 #define TAM_BLOCO 4096
 
-unsigned long contarFreq(FILE *arq, unsigned long freq[])
-{
+unsigned long contarFreq(FILE *arq, unsigned long freq[]){
     unsigned char buffer[TAM_BLOCO];
 
     unsigned long tamanho = 0;
@@ -55,8 +54,7 @@ void compactarArquivo(FILE *origem, FILE *destino, char *tabela[]){
         compactarBloco(buffer, lidos, destino, tabela, &bw);
     }
 
-    finalizarWriter(destino,
-                    &bw);
+    finalizarWriter(destino, &bw);
 }
 
 void escreverCabecalho(FILE *destino, No *raiz, unsigned long tamanhoOriginal)
