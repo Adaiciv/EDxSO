@@ -18,8 +18,16 @@ typedef struct{
 typedef struct{
     char assinatura[4];
     unsigned long tamanhoOriginal;
-    unsigned long freq;
 }Cabecalho;
+
+int ehArquivoHuff(const char *nome){
+    const char *ext = strrchr(nome, '.');
+
+    if(!ext)
+        return 0;
+
+    return strcmp(ext, ".huff") == 0;
+}
 
 unsigned long contarFreq(FILE *arq, unsigned long freq[]){
     unsigned char c;
@@ -36,6 +44,7 @@ unsigned long contarFreq(FILE *arq, unsigned long freq[]){
 
 No *criarNo(unsigned char byte, unsigned long freq){
     No *novo = (No *)malloc(sizeof(No));
+    if(!novo) return NULL;
 
     novo->byte = byte;
     novo->freq = freq;
@@ -131,8 +140,14 @@ No *construirHuffman(heap *h){
 void gerarCodigos(No *r, char codigo[], int nivel, char *tabela[]){
     if(!r) return;
 
-    if(!r->esq && !r->dir){
-        codigo[nivel] = '\0';
+    if(!r->esq && !r->dir){   
+        if(nivel == 0){
+            codigo[0] = '0';
+            codigo[1] = '\0';
+        }
+        else{
+            codigo[nivel] = '\0';
+        }
 
         tabela[r->byte] = malloc(strlen(codigo) + 1);
 
@@ -148,16 +163,64 @@ void gerarCodigos(No *r, char codigo[], int nivel, char *tabela[]){
     gerarCodigos(r->dir, codigo, nivel + 1, tabela);
 }
 
-void escreverCabecalho(FILE *destino, unsigned long freq[], unsigned long tamanhoOriginal){
-    Cabecalho h;
+void serializarArvore(No *r, FILE *destino){
+    if(!r) return;
 
-    memcpy(h.assinatura, "HUFF", 4);
+    if(!r->esq && !r->dir){
 
-    h.tamanhoOriginal = tamanhoOriginal;
+        unsigned char marca = 1;
 
-    memcpy(h.freq, freq, sizeof(unsigned long) * 256);
+        fwrite(&marca,1,1,destino);
 
-    fwrite(&h, sizeof(Cabecalho), 1, destino);
+        fwrite(&r->byte,1,1,destino);
+
+        return;
+    }
+
+    unsigned char marca = 0;
+
+    fwrite(&marca,1,1,destino);
+
+    serializarArvore(r->esq,destino);
+
+    serializarArvore(r->dir,destino);
+}
+
+No *desserializarArvore(FILE *origem){
+    unsigned char marca;
+
+    if(fread(&marca,1,1,origem)!=1) return NULL;
+
+    if(marca == 1){
+
+        unsigned char byte;
+
+        fread(&byte,1,1,origem);
+
+        return criarNo(byte,0);
+    }
+
+    No *pai = criarNo('*',0);
+
+    pai->esq = desserializarArvore(origem);
+
+    pai->dir = desserializarArvore(origem);
+
+    return pai;
+}
+
+int lerBit(FILE *origem, unsigned char *buffer, int *pos){
+    if(*pos == 8){
+
+        if(fread(buffer,1,1,origem) != 1) return -1;
+        *pos = 0;
+    }
+
+    int bit = (*buffer >> (7 - *pos)) & 1;
+
+    (*pos)++;
+
+    return bit;
 }
 
 void escreverBit(FILE *destino, int bit, unsigned char *buffer, int *pos){
@@ -175,6 +238,22 @@ void escreverBit(FILE *destino, int bit, unsigned char *buffer, int *pos){
     
 }
 
+void escreverCabecalho(FILE *destino, No *raiz, unsigned long tamanhoOriginal){
+    Cabecalho h;
+
+    memcpy(h.assinatura,"HUFF",4);
+
+    h.tamanhoOriginal = tamanhoOriginal;
+
+    fwrite(&h, sizeof(Cabecalho), 1, destino);
+
+    serializarArvore(raiz,destino);
+}
+
+int lerCabecalho(FILE *arq, Cabecalho *h){
+    return fread(h, sizeof(Cabecalho), 1, arq);
+}
+
 void compactarArquivo(FILE *origem, FILE *destino, char *tabela[]){
     unsigned char c;
 
@@ -186,16 +265,14 @@ void compactarArquivo(FILE *origem, FILE *destino, char *tabela[]){
         
         char *codigo = tabela[c];
 
+        if(!codigo) return;
+
         for(int i = 0; codigo[i] != '\0'; i++){
             escreverBit(destino, codigo[i] == '1', &buffer, &pos);
         }
     }
 
     if(pos > 0) fwrite(&buffer, 1, 1, destino);
-}
-
-int lerCabecalho(FILE *arq, Cabecalho *h){
-    return fread(h, sizeof(Cabecalho), 1, arq);
 }
 
 void imprimirCodigos(char *tabela[]){
@@ -226,27 +303,7 @@ void liberarHeap(heap *h){
     free(h);
 }
 
-//argc - argument count - numero total de argumentos passados
-//argv - argument vector - array de ponteiros para strings, onde cada elemento aponta para um argumento especifico.
-int main(int argc, char *argv[]){
-
-    if(argc != 3){
-        printf("Uso: %s origem destino\n", argv[0]);
-        return 1;
-    }
-
-    FILE *origem = fopen(argv[1], "rb");
-    FILE *destino = fopen(argv[2], "wb");
-
-    if (!origem || !destino) {
-        printf("Erro ao abrir os arquivos.\n");
-
-        if (origem) fclose(origem);
-        if (destino) fclose(destino);
-
-        return 1;
-    }
-
+void processarArquivo(FILE *origem, FILE *destino){
     unsigned long freq[256] = {0};
 
     unsigned long tamanhoOriginal = contarFreq(origem, freq);
@@ -254,9 +311,7 @@ int main(int argc, char *argv[]){
     heap *h = criarHeap(256);
 
     for(int i = 0; i < 256; i++){
-        if(freq[i] > 0){
-            inserirHeap(h, criarNo(i, freq[i]));
-        }
+        if(freq[i] > 0) inserirHeap(h, criarNo(i, freq[i]));
     };
 
     if(h->tam==0){
@@ -265,11 +320,7 @@ int main(int argc, char *argv[]){
 
         liberarHeap(h);
 
-        fclose(origem);
-
-        fclose(destino);
-
-        return 1;
+        return;
     }
 
     No *raiz = construirHuffman(h);
@@ -282,7 +333,7 @@ int main(int argc, char *argv[]){
 
     imprimirCodigos(tabela);
 
-    escreverCabecalho(destino, freq, tamanhoOriginal);
+    escreverCabecalho(destino, raiz, tamanhoOriginal);
 
     rewind(origem);
 
@@ -302,11 +353,110 @@ int main(int argc, char *argv[]){
     liberarArvore(raiz);
 
     liberarHeap(h);
+}
+
+void descompactarArquivo(FILE *origem, FILE *destino){
+    Cabecalho cab;
+
+    if(!lerCabecalho(origem,&cab)){
+
+        printf("Erro ao ler cabecalho.\n");
+
+        return;
+    }
+
+    if(memcmp(cab.assinatura,"HUFF",4)!=0){
+
+        printf("Arquivo invalido.\n");
+
+        return;
+    }
+
+    No *raiz = desserializarArvore(origem);
+
+    No *atual = raiz;
+
+    unsigned char buffer = 0;
+
+    int pos = 8;
+
+    unsigned long escritos = 0;
+
+    if(!raiz->esq && !raiz->dir){
+        for(unsigned long i = 0; i < cab.tamanhoOriginal; i++){
+            fwrite(&raiz->byte, 1, 1, destino);
+        }
+        liberarArvore(raiz);
+        return;
+    }
+
+    while(escritos < cab.tamanhoOriginal){
+
+        int bit = lerBit(origem, &buffer, &pos);
+
+        if(bit == -1) break;
+
+        if(bit == 0) atual = atual->esq;
+        else atual = atual->dir;
+
+        if(!atual->esq && !atual->dir){
+
+            fwrite(&atual->byte, 1, 1, destino);
+
+            escritos++;
+
+            atual = raiz;
+        }
+    }
+
+    liberarArvore(raiz);
+}
+
+
+//argc - argument count - numero total de argumentos passados
+//argv - argument vector - array de ponteiros para strings, onde cada elemento aponta para um argumento especifico.
+int main(int argc, char *argv[]){
+    if(argc != 3){
+        printf("Uso: %s origem destino\n", argv[0]);
+        return 1;
+    }
+
+    FILE *origem = fopen(argv[1], "rb");
+
+    if(!origem){
+        printf("Erro ao abrir o arquivo de origem.\n");
+        return 1;
+    }
+
+    int compactado = ehArquivoHuff(argv[1]);
+
+    if(!compactado){
+        fseek(origem, 0, SEEK_END);
+
+        long tamanho = ftell(origem);
+
+        rewind(origem);
+
+        if(tamanho == 0){
+            printf("O arquivo esta vazio.\n");
+            fclose(origem);
+            return 1;
+        }
+    }
+
+    FILE *destino = fopen(argv[2], "wb");
+
+    if(!destino){
+        printf("Erro ao criar o arquivo de destino.\n");
+        fclose(origem);
+        return 1;
+    }
+
+    if(compactado) descompactarArquivo(origem, destino);
+    else processarArquivo(origem, destino);
 
     fclose(origem);
-
     fclose(destino);
-
 
     return 0;
 }
