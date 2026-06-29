@@ -1,8 +1,9 @@
 #ifndef DESCOMPRESSOR_H
 #define DESCOMPRESSOR_H
 
+#include <stdio.h>
+
 #include "compressor.h"
-#include "bitstream.h"
 
 int lerCabecalho(FILE *arq, Cabecalho *h);
 

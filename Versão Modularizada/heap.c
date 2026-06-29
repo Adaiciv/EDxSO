@@ -1,10 +1,24 @@
 #include "heap.h"
 #include "huffman.h"
 
+static void trocar(No **a, No **b)
+{
+    No *aux = *a;
+    *a = *b;
+    *b = aux;
+}
+
 heap *criarHeap(int capacidade){
     heap *h = malloc(sizeof(heap));
 
+    if(!h) return NULL;
+
     h->v = malloc(sizeof(No*) * capacidade);
+
+    if(!h->v){
+        free(h);
+        return NULL;
+    }
 
     h->tam = 0;
 
@@ -14,6 +28,23 @@ heap *criarHeap(int capacidade){
 }
 
 void inserirHeap(heap *h, No *novo){
+
+    if(!h || !novo) return;
+
+    if(h->tam == h->capacidade){
+
+        h->capacidade *= 2;
+
+        No **novoVetor =
+            realloc(h->v,
+                    sizeof(No *) * h->capacidade);
+
+        if(!novoVetor)
+            return;
+
+        h->v = novoVetor;
+    }
+    
     int i = h->tam;
 
     h->v[i] = novo;
@@ -26,9 +57,7 @@ void inserirHeap(heap *h, No *novo){
 
         if(h->v[pai]->freq <= h->v[i]->freq) break;
 
-        No *aux = h->v[pai];
-        h->v[pai] = h->v[i];
-        h->v[i] = aux;
+        trocar(&h->v[pai], &h->v[i]);
 
         i = pai;
     }
@@ -56,9 +85,7 @@ No *removerMin(heap *h){
             menorFilho = dir;
         if(menorFilho == i) break;
 
-        No *aux = h->v[i];
-        h->v[i] = h->v[menorFilho];
-        h->v[menorFilho] = aux;
+        trocar(&h->v[i], &h->v[menorFilho]);
 
         i = menorFilho;
     }
@@ -67,6 +94,7 @@ No *removerMin(heap *h){
 }
 
 void liberarHeap(heap *h){
+    if(!h) return;
     free(h->v);
     free(h);
 }

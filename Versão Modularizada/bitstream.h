@@ -1,10 +1,32 @@
-#ifndef BISTREAM_H
+#ifndef BITSTREAM_H
 #define BITSTREAM_H
 
-#include "huffman.h"
+#include <stdio.h>
 
-int lerBit(FILE *origem, unsigned char *buffer, int *pos);
+typedef struct{
 
-void escreverBit(FILE *destino, int bit, unsigned char *buffer, int *pos);
+    unsigned char buffer;
+
+    int pos;
+
+} BitWriter;
+
+typedef struct{
+
+    unsigned char buffer;
+
+    int pos;
+
+} BitReader;
+
+void iniciarWriter(BitWriter *bw);
+
+void escreverBit(FILE *destino, BitWriter *bw, int bit);
+
+void finalizarWriter(FILE *destino, BitWriter *bw);
+
+void iniciarReader(BitReader *br);
+
+int lerBit(FILE *origem, BitReader *br);
 
 #endif

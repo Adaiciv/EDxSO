@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <string.h>
+
 #include "descompressor.h"
 #include "bitstream.h"
 #include "huffman.h"
@@ -16,7 +19,7 @@ void descompactarArquivo(FILE *origem, FILE *destino){
         return;
     }
 
-    if(memcmp(cab.assinatura,"HUFF",4)!=0){
+    if(memcmp(cab.assinatura, "HUFF", 4)!=0){
 
         printf("Arquivo invalido.\n");
 
@@ -25,30 +28,42 @@ void descompactarArquivo(FILE *origem, FILE *destino){
 
     No *raiz = desserializarArvore(origem);
 
-    No *atual = raiz;
+    if(!raiz){
 
-    unsigned char buffer = 0;
+        printf("Erro ao reconstruir a arvore.\n");
 
-    int pos = 8;
-
-    unsigned long escritos = 0;
-
-    if(!raiz->esq && !raiz->dir){
-        for(unsigned long i = 0; i < cab.tamanhoOriginal; i++){
-            fwrite(&raiz->byte, 1, 1, destino);
-        }
-        liberarArvore(raiz);
         return;
     }
 
+    if(!raiz->esq && !raiz->dir){
+
+        for(unsigned long i=0; i<cab.tamanhoOriginal; i++){
+            fwrite(&raiz->byte, 1, 1, destino);
+        }
+
+        liberarArvore(raiz);
+
+        return;
+    }
+
+    BitReader br;
+
+    iniciarReader(&br);
+
+    unsigned long escritos = 0;
+
+    No *atual = raiz;
+
     while(escritos < cab.tamanhoOriginal){
 
-        int bit = lerBit(origem, &buffer, &pos);
+        int bit = lerBit(origem, &br);
 
         if(bit == -1) break;
 
-        if(bit == 0) atual = atual->esq;
-        else atual = atual->dir;
+        if(bit == 0)
+            atual = atual->esq;
+        else
+            atual = atual->dir;
 
         if(!atual->esq && !atual->dir){
 

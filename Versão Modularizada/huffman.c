@@ -1,4 +1,8 @@
+#include <stdlib.h>
+#include <string.h>
+
 #include "huffman.h"
+#include "heap.h"
 
 No *criarNo(unsigned char byte, unsigned long freq){
     No *novo = (No *)malloc(sizeof(No));
@@ -18,6 +22,7 @@ No *construirHuffman(heap *h){
         No *b = removerMin(h);
 
         No *pai = criarNo('*', a->freq + b->freq);
+        if(!pai) return NULL;
 
         pai->esq = a;
         pai->dir = b;
@@ -41,6 +46,7 @@ void gerarCodigos(No *r, char codigo[], int nivel, char *tabela[]){
         }
 
         tabela[r->byte] = malloc(strlen(codigo) + 1);
+        if(!tabela[r->byte]) return;
 
         strcpy(tabela[r->byte], codigo);
 
@@ -82,7 +88,7 @@ No *desserializarArvore(FILE *origem){
 
     if(fread(&marca,1,1,origem)!=1) return NULL;
 
-    if(marca == 1){
+    if(marca){
 
         unsigned char byte;
 
