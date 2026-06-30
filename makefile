@@ -1,26 +1,22 @@
-IDIR =../include
-CC=gcc
-CFLAGS=-I$(IDIR)
+CC = gcc
+CFLAGS = -Wall -Wextra -O2
+LDFLAGS =
+TARGET = compressor
+SRCS = compressor.c
+OBJS = $(SRCS:.c=.o)
 
-ODIR=obj
-LDIR =../lib
+all: $(TARGET)
 
-LIBS=-lm
+$(TARGET): $(OBJS)
+$(CC) $(LDFLAGS) -o $@ $^
 
-_DEPS = make.h
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+%.o: %.c
+$(CC) $(CFLAGS) -c $< -o $@
 
-_OBJ = make.o func.o 
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
-
-$(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-make: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
-
-.PHONY: clean
+.PHONY: clean run
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+rm -f $(OBJS) $(TARGET)
+
+run: $(TARGET)
+./$(TARGET)
