@@ -8,3 +8,4 @@
         ./huff teste1.txt teste1.huff
  - Execução (Descompactação):
         ./huff teste1.huff resultado.txt
+EDxSO
