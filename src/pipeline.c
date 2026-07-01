@@ -1,6 +1,8 @@
 #include "pipeline.h"
 #include "crc32.h"
+#include "compressor.h" 
 #include <stdlib.h>
+#include <pthread.h>
 
 #define CAPACIDADE_FILA 100
 
@@ -85,7 +87,7 @@ void* thread_codificadora(void* arg) {
         pthread_cond_signal(&fila_entrada.pode_produzir);
         pthread_mutex_unlock(&fila_entrada.trava);
 
-        // [APLICAR COMPRESSÃO DE HUFFMAN NO BLOCO_PARA_PROCESSAR]
+        compactarBloco_Para_Pipeline(bloco_para_processar, (char **)arg);
 
         pthread_mutex_lock(&fila_saida.trava);
 
@@ -155,4 +157,35 @@ void* thread_escritora(void* arg){
 
     return NULL;
 
+}
+
+void iniciar_pipeline(FILE *origem, FILE *destino, int num_codificadores, void *tabela_huffman) {
+    pthread_mutex_init(&fila_entrada.trava, NULL);
+    pthread_cond_init(&fila_entrada.pode_produzir, NULL);
+    pthread_cond_init(&fila_entrada.pode_consumir, NULL);
+    
+    pthread_mutex_init(&fila_saida.trava, NULL);
+    pthread_cond_init(&fila_saida.pode_produzir, NULL);
+    pthread_cond_init(&fila_saida.pode_consumir, NULL);
+
+    pthread_t t_leitora;
+    pthread_t t_escritora;
+    pthread_t t_codificadores[num_codificadores];
+
+    pthread_create(&t_leitora, NULL, thread_leitura, origem);
+    pthread_create(&t_escritora, NULL, thread_escritora, destino);
+    
+    for (int i = 0; i < num_codificadores; i++) {
+        pthread_create(&t_codificadores[i], NULL, thread_codificadora, tabela_huffman);
+    }
+
+    pthread_join(t_leitora, NULL);
+    for (int i = 0; i < num_codificadores; i++) {
+        pthread_join(t_codificadores[i], NULL);
+    }
+    pthread_join(t_escritora, NULL);
+
+    pthread_mutex_destroy(&fila_entrada.trava);
+    pthread_mutex_destroy(&fila_saida.trava);
+    // (Opcional: destruir as condvars aqui)
 }

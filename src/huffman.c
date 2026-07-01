@@ -1,8 +1,13 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "huffman.h"
 #include "heap.h"
+
+static int ehFolha(No *r){
+    return r != NULL && r->esq == NULL && r->dir == NULL;
+}
 
 No *criarNo(unsigned char byte, unsigned long freq){
     No *novo = (No *)malloc(sizeof(No));
@@ -17,9 +22,15 @@ No *criarNo(unsigned char byte, unsigned long freq){
 }
 
 No *construirHuffman(heap *h){
+    if(!h) return NULL;
+
     while(h->tam > 1){
         No *a = removerMin(h);
         No *b = removerMin(h);
+
+        if(!a || !b){
+            return NULL;
+        }
 
         No *pai = criarNo('*', a->freq + b->freq);
         if(!pai) return NULL;
@@ -30,18 +41,17 @@ No *construirHuffman(heap *h){
         inserirHeap(h, pai);
     }
 
-    return removerMin(h);
+    return (h->tam == 1) ? removerMin(h) : NULL;
 }
 
 void gerarCodigos(No *r, char codigo[], int nivel, char *tabela[]){
-    if(!r) return;
+    if(!r || !codigo || !tabela) return;
 
-    if(!r->esq && !r->dir){   
-        if(nivel == 0){
+    if(ehFolha(r)){
+        if(nivel <= 0){
             codigo[0] = '0';
             codigo[1] = '\0';
-        }
-        else{
+        } else {
             codigo[nivel] = '\0';
         }
 
@@ -49,58 +59,58 @@ void gerarCodigos(No *r, char codigo[], int nivel, char *tabela[]){
         if(!tabela[r->byte]) return;
 
         strcpy(tabela[r->byte], codigo);
-
         return;
     }
 
-    codigo[nivel] = '0';
-    gerarCodigos(r->esq, codigo, nivel + 1, tabela);
+    if(r->esq != NULL){
+        codigo[nivel] = '0';
+        gerarCodigos(r->esq, codigo, nivel + 1, tabela);
+    }
 
-    codigo[nivel] = '1';
-    gerarCodigos(r->dir, codigo, nivel + 1, tabela);
+    if(r->dir != NULL){
+        codigo[nivel] = '1';
+        gerarCodigos(r->dir, codigo, nivel + 1, tabela);
+    }
 }
 
 void serializarArvore(No *r, FILE *destino){
-    if(!r) return;
+    if(!r || !destino) return;
 
-    if(!r->esq && !r->dir){
-
+    if(ehFolha(r)){
         unsigned char marca = 1;
-
-        fwrite(&marca,1,1,destino);
-
-        fwrite(&r->byte,1,1,destino);
-
+        fwrite(&marca, 1, 1, destino);
+        fwrite(&r->byte, 1, 1, destino);
         return;
     }
 
     unsigned char marca = 0;
+    fwrite(&marca, 1, 1, destino);
 
-    fwrite(&marca,1,1,destino);
-
-    serializarArvore(r->esq,destino);
-
-    serializarArvore(r->dir,destino);
+    serializarArvore(r->esq, destino);
+    serializarArvore(r->dir, destino);
 }
 
 No *desserializarArvore(FILE *origem){
     unsigned char marca;
 
-    if(fread(&marca,1,1,origem)!=1) return NULL;
+    if(!origem) return NULL;
 
-    if(marca){
-
-        unsigned char byte;
-
-        fread(&byte,1,1,origem);
-
-        return criarNo(byte,0);
+    if(fread(&marca, 1, 1, origem) != 1){
+        return NULL;
     }
 
-    No *pai = criarNo('*',0);
+    if(marca){
+        unsigned char byte;
+        if(fread(&byte, 1, 1, origem) != 1){
+            return NULL;
+        }
+        return criarNo(byte, 0);
+    }
+
+    No *pai = criarNo('*', 0);
+    if(!pai) return NULL;
 
     pai->esq = desserializarArvore(origem);
-
     pai->dir = desserializarArvore(origem);
 
     return pai;
@@ -110,8 +120,6 @@ void liberarArvore(No *r){
     if(!r) return;
 
     liberarArvore(r->esq);
-
     liberarArvore(r->dir);
-
     free(r);
 }

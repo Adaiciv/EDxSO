@@ -8,53 +8,57 @@
 #include "bitstream.h"
 #include "util.h"
 
-#define TAM_BLOCO 4096
-
+// Usando a sua constante global para manter consistência
 unsigned long contarFreq(FILE *arq, unsigned long freq[]){
-    unsigned char buffer[TAM_BLOCO];
+    unsigned char buffer[TAMANHO_BLOCO];
 
     unsigned long tamanho = 0;
 
     size_t lidos;
 
-    while((lidos = fread(buffer,1,TAM_BLOCO,arq)) > 0){
-
+    while((lidos = fread(buffer,1,TAMANHO_BLOCO,arq)) > 0){
         tamanho += lidos;
-
         for(size_t i=0;i<lidos;i++) freq[buffer[i]]++;
     }
 
     return tamanho;
 }
 
-void compactarBloco(unsigned char *dados, size_t tamanho, FILE *destino, char *tabela[], BitWriter *bw){
-    for(size_t j=0;j<tamanho;j++){
+// A ÚNICA função de compressão que fica! (A do seu Pipeline)
+void compactarBloco_Para_Pipeline(BlocoArquivo *bloco, char *tabela[]) {
+    
+    size_t total_bits = 0;
+    for(int i = 0; i < bloco->tamanho_real; i++) {
+        char *codigo = tabela[bloco->dados[i]];
+        if(codigo) total_bits += strlen(codigo);
+    }
 
-        char *codigo = tabela[dados[j]];
+    size_t total_bytes = (total_bits + 7) / 8;
+    
+    bloco->dados_comprimidos = (unsigned char *)calloc(total_bytes, 1);
+    bloco->tamanho_comprimido = total_bytes;
 
+    int bit_pos = 0;
+    int byte_pos = 0;
+    
+    for(int i = 0; i < bloco->tamanho_real; i++) {
+        char *codigo = tabela[bloco->dados[i]];
+        
         if(!codigo) continue;
-
-        for(int i=0;codigo[i];i++){
-
-            escreverBit(destino, bw, codigo[i]=='1');
+        
+        for(int j = 0; codigo[j] != '\0'; j++) {
+            if(codigo[j] == '1') {
+                bloco->dados_comprimidos[byte_pos] |= (1 << (7 - bit_pos));
+            }
+            
+            bit_pos++;
+            
+            if(bit_pos == 8) {
+                bit_pos = 0;
+                byte_pos++;
+            }
         }
     }
-}
-
-void compactarArquivo(FILE *origem, FILE *destino, char *tabela[]){
-    unsigned char buffer[TAM_BLOCO];
-
-    size_t lidos;
-
-    BitWriter bw;
-
-    iniciarWriter(&bw);
-
-    while((lidos=fread(buffer, 1, TAM_BLOCO, origem))>0){
-        compactarBloco(buffer, lidos, destino, tabela, &bw);
-    }
-
-    finalizarWriter(destino, &bw);
 }
 
 void escreverCabecalho(FILE *destino, No *raiz, unsigned long tamanhoOriginal)
@@ -68,66 +72,4 @@ void escreverCabecalho(FILE *destino, No *raiz, unsigned long tamanhoOriginal)
     fwrite(&h, sizeof(Cabecalho), 1, destino);
 
     serializarArvore(raiz, destino);
-}
-
-void processarArquivo(FILE *origem, FILE *destino){
-    unsigned long freq[256]={0};
-
-    unsigned long tamanhoOriginal =
-        contarFreq(origem, freq);
-
-    heap *h = criarHeap(256);
-
-    if(!h){
-
-        printf("Erro ao criar heap.\n");
-
-        return;
-    }
-
-    for(int i=0;i<256;i++){
-
-        if(freq[i]>0){
-            inserirHeap(h, criarNo(i, freq[i]));
-        }
-    }
-
-    if(h->tam==0){
-
-        printf("Arquivo vazio.\n");
-
-        liberarHeap(h);
-
-        return;
-    }
-
-    No *raiz = construirHuffman(h);
-
-    char caminho[256]={0};
-
-    char *tabela[256]={NULL};
-
-    gerarCodigos(raiz, caminho, 0, tabela);
-
-    imprimirCodigos(tabela);
-
-    escreverCabecalho(destino, raiz, tamanhoOriginal);
-
-    rewind(origem);
-
-    compactarArquivo(origem, destino, tabela);
-
-    long tamanhoCompactado = ftell(destino);
-
-    printf("\nArquivo original : %lu bytes\n", tamanhoOriginal);
-
-    printf("Arquivo compactado: %ld bytes\n", tamanhoCompactado);
-
-    printf("Taxa de compressao: %.2f%%\n", 100.0 * (1.0 - (double)tamanhoCompactado / tamanhoOriginal));
-
-    liberarTabela(tabela);
-
-    liberarArvore(raiz);
-
-    liberarHeap(h);
 }
