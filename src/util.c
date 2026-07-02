@@ -10,7 +10,7 @@ int ehArquivoHuff(const char *nome){
     if(!ext)
         return 0;
 
-    return strcmp(ext, ".huff") == 0;
+    return strcmp(ext, ".czp") == 0;
 }
 
 void imprimirCodigos(char *tabela[]){

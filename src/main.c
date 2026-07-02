@@ -6,9 +6,14 @@
 #include "pipeline.h" // Adicionado para acessar o seu Pipeline
 
 int main(int argc, char *argv[]){
-    if(argc != 3){
-        printf("Uso: %s origem destino\n", argv[0]);
+    if(argc < 3 || argc > 4){
+        printf("Uso: %s origem destino [num_threads]\n", argv[0]);
         return 1;
+    }
+
+    int num_threads = 4; // Padrão
+    if (argc == 4) {
+        num_threads = atoi(argv[3]);
     }
 
     FILE *origem = fopen(argv[1], "rb");
@@ -47,7 +52,9 @@ int main(int argc, char *argv[]){
         
         // 1. Pedro: Monta a estrutura da árvore (Sequencial)
         unsigned long freq[256] = {0};
-        contarFreq(origem, freq); // Conta frequências
+        
+        // SALVE O RETORNO AQUI:
+        unsigned long tamanho_original = contarFreq(origem, freq); 
         
         heap *h = criarHeap(256);
         for(int i = 0; i < 256; i++) if(freq[i] > 0) inserirHeap(h, criarNo(i, freq[i]));
@@ -57,12 +64,12 @@ int main(int argc, char *argv[]){
         char caminho[256] = {0};
         gerarCodigos(raiz, caminho, 0, tabela);
 
-        // 2. Escreve o cabeçalho no arquivo de destino
-        escreverCabecalho(destino, raiz, 0); // O tamanho original pode ser ajustado depois se precisar
+        // 2. Escreve o cabeçalho no arquivo de destino PASSANDO O TAMANHO
+        escreverCabecalho(destino, raiz, tamanho_original);
 
         // 3. Diêgo: Liga a Fábrica (Pipeline Concorrente)
         rewind(origem); // Volta ao início para o Leitor começar
-        iniciar_pipeline(origem, destino, 4, tabela); // 4 é o número de threads codificadoras
+        iniciar_pipeline(origem, destino, num_threads, tabela);
 
         // 4. Limpeza
         liberarTabela(tabela);

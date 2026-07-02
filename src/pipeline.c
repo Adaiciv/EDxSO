@@ -21,6 +21,7 @@ FilaSincronizada fila_entrada;
 FilaSincronizada fila_saida;
 
 int leitura_concluida = 0;
+int total_blocos_lidos = -1;
 
 void* thread_leitura(void* arg){
     FILE* origem = (FILE*)arg;
@@ -57,6 +58,7 @@ void* thread_leitura(void* arg){
     }
 
     pthread_mutex_lock(&fila_entrada.trava);
+    total_blocos_lidos = id_atual;
     leitura_concluida = 1;
     pthread_cond_broadcast(&fila_entrada.pode_consumir);
     pthread_mutex_unlock(&fila_entrada.trava);
@@ -77,7 +79,15 @@ void* thread_codificadora(void* arg) {
 
         if (fila_entrada.quantidade == 0 && leitura_concluida) {
             pthread_mutex_unlock(&fila_entrada.trava);
-            break;
+            
+            // ==========================================
+            // O PULO DO GATO AQUI: Acorde a escritora antes de morrer!
+            pthread_mutex_lock(&fila_saida.trava);
+            pthread_cond_broadcast(&fila_saida.pode_consumir);
+            pthread_mutex_unlock(&fila_saida.trava);
+            // ==========================================
+            
+            break; // Agora sim pode sair
         }
 
         bloco_para_processar = fila_entrada.blocos[fila_entrada.inicio];
@@ -112,15 +122,15 @@ void* thread_escritora(void* arg){
     int bloco_esperado = 0;
 
     while(1) {
-        BlocoArquivo *bloco_para_escrever = NULL;
-        int indice_encontrado = -1;
-
         pthread_mutex_lock(&fila_saida.trava);
 
-        while (fila_saida.quantidade == 0 && !leitura_concluida) {
-            pthread_cond_wait(&fila_saida.pode_consumir, &fila_saida.trava);
+        // CONDIÇÃO DE PARADA CORRETA: Leu tudo e já escreveu todos os blocos.
+        if (leitura_concluida && bloco_esperado == total_blocos_lidos) {
+            pthread_mutex_unlock(&fila_saida.trava);
+            break;
         }
 
+        int indice_encontrado = -1;
         for(int i = 0; i < CAPACIDADE_FILA; i++){
             if(fila_saida.blocos[i] != NULL && fila_saida.blocos[i]->id_bloco == bloco_esperado){
                 indice_encontrado = i;
@@ -128,24 +138,29 @@ void* thread_escritora(void* arg){
             }
         }
 
-        if(indice_encontrado != -1){
-            bloco_para_escrever = fila_saida.blocos[indice_encontrado];
-            fila_saida.blocos[indice_encontrado] = NULL; 
-            fila_saida.quantidade--;
-            pthread_cond_broadcast(&fila_saida.pode_produzir);
-        }
-
-        if (indice_encontrado == -1 && leitura_concluida && fila_saida.quantidade == 0) {
+        // Se o bloco que precisamos ainda não chegou, dorme e espera!
+        if(indice_encontrado == -1){
+            pthread_cond_wait(&fila_saida.pode_consumir, &fila_saida.trava);
             pthread_mutex_unlock(&fila_saida.trava);
-            break;
+            continue; 
         }
 
+        // Achou o bloco
+        BlocoArquivo *bloco_para_escrever = fila_saida.blocos[indice_encontrado];
+        fila_saida.blocos[indice_encontrado] = NULL; 
+        fila_saida.quantidade--;
+        pthread_cond_broadcast(&fila_saida.pode_produzir); // Acorda os codificadores
+        
         pthread_mutex_unlock(&fila_saida.trava);
 
+        // Escreve os dados no disco
         if(bloco_para_escrever){
             fwrite(&bloco_para_escrever->checksum_crc32, sizeof(uint32_t), 1, destino);
-            fwrite(&bloco_para_escrever->tamanho_comprimido, sizeof(size_t), 1, destino);
             
+            // ADICIONE ESTA LINHA AQUI EMBAIXO:
+            fwrite(&bloco_para_escrever->tamanho_real, sizeof(int), 1, destino); 
+            
+            fwrite(&bloco_para_escrever->tamanho_comprimido, sizeof(size_t), 1, destino);
             fwrite(bloco_para_escrever->dados_comprimidos, 1, bloco_para_escrever->tamanho_comprimido, destino);
             
             free(bloco_para_escrever->dados_comprimidos);
@@ -154,9 +169,7 @@ void* thread_escritora(void* arg){
             bloco_esperado++;
         }
     }
-
     return NULL;
-
 }
 
 void iniciar_pipeline(FILE *origem, FILE *destino, int num_codificadores, void *tabela_huffman) {
